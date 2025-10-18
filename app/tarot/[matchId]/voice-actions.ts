@@ -13,7 +13,7 @@ export async function generateIntroAudio(candidateName: string) {
     
     const result = await client.generateSpeech(
       introText,
-      VOICE_IDS.RACHEL,
+      VOICE_IDS.NATASHA,
       MEDITATIVE_VOICE_SETTINGS
     )
 
@@ -58,7 +58,7 @@ May this guidance illuminate your path.`
 
     const result = await client.generateSpeech(
       readingText,
-      VOICE_IDS.RACHEL,
+      VOICE_IDS.NATASHA,
       MEDITATIVE_VOICE_SETTINGS
     )
 

@@ -4,15 +4,17 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { AudioPlayer } from "@/components/audio-player"
-import { generateReadingAudio } from "../../voice-actions"
 import Link from "next/link"
-import { TAROT_CARDS } from "@/lib/tarot/cards"
+import { AnimatedCardReveal } from "./animated-card-reveal"
+import { AnimatedTextReveal } from "./animated-text-reveal"
 
 interface TarotReadingResultProps {
   reading: {
+    id: string
     cardName: string
     meaning: string
     interpretation: string
+    image?: string
   }
   candidateName: string
   matchId: string
@@ -21,36 +23,44 @@ interface TarotReadingResultProps {
 
 export function TarotReadingResult({ reading, candidateName, matchId, candidateId }: TarotReadingResultProps) {
   const [readingAudio, setReadingAudio] = useState<{ audioData: string; mimeType: string } | null>(null)
-  const card = TAROT_CARDS.find((c) => c.name === reading.cardName)
+  const [audioLoading, setAudioLoading] = useState(false)
 
-  // Generate reading audio on component mount
+  // Load reading audio on component mount - non-blocking
   useEffect(() => {
     const loadReadingAudio = async () => {
       try {
-        const result = await generateReadingAudio(
-          reading.cardName,
-          reading.meaning,
-          reading.interpretation,
-          candidateName
-        )
-        if (result.success && result.audioData && result.audioData.length > 1000) {
-          setReadingAudio({
-            audioData: result.audioData,
-            mimeType: result.mimeType || 'audio/mpeg'
-          })
+        // Start loading indicator
+        setAudioLoading(true)
+
+        // Fetch audio from the API endpoint
+        const response = await fetch(`/tarot/${matchId}/reading/${reading.id}/audio`)
+        
+        if (response.ok) {
+          const result = await response.json()
+          if (result.success && result.audioData) {
+            const audioData = {
+              audioData: result.audioData,
+              mimeType: result.mimeType
+            }
+            setReadingAudio(audioData)
+          }
+        } else {
+          console.error('Failed to fetch audio:', response.status)
         }
       } catch (error) {
         console.error('Failed to load reading audio:', error)
+      } finally {
+        setAudioLoading(false)
       }
     }
 
-    // Add a small delay to ensure the page is fully loaded before generating audio
+    // Start audio loading in background after a short delay to let page render first
     const timer = setTimeout(() => {
       loadReadingAudio()
-    }, 500)
+    }, 100)
 
     return () => clearTimeout(timer)
-  }, [reading.cardName, reading.meaning, reading.interpretation, candidateName])
+  }, [reading.id, matchId])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#a8b88f] to-[#d4d4a8] p-4 md:p-8">
@@ -63,22 +73,32 @@ export function TarotReadingResult({ reading, candidateName, matchId, candidateI
         </Button>
 
         <Card className="border-2 bg-white/90 backdrop-blur">
-          <CardHeader className="text-center space-y-4 pb-8">
-            <div className="text-6xl">{card?.image}</div>
-            <CardTitle className="text-3xl font-serif">{reading.cardName}</CardTitle>
-            <CardDescription className="text-base italic">{reading.meaning}</CardDescription>
+          <CardHeader className="text-center space-y-6 pb-8">
+            {/* Animated Card Reveal */}
+            <AnimatedCardReveal 
+              cardName={reading.cardName}
+              candidateName={candidateName}
+              isLoading={false}
+              imageUrl={reading.image}
+            />
             
             {/* Audio Player */}
-            {readingAudio && (
-              <div className="flex justify-center mt-4">
+            <div className="flex justify-center mt-4">
+              {audioLoading && (
+                <div className="flex items-center space-x-2 text-slate-600">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-slate-600"></div>
+                  <span className="text-sm">Generating audio...</span>
+                </div>
+              )}
+              {readingAudio && !audioLoading && (
                 <AudioPlayer
                   audioData={readingAudio.audioData}
                   mimeType={readingAudio.mimeType}
                   autoPlay={true}
                   className="max-w-md"
                 />
-              </div>
-            )}
+              )}
+            </div>
           </CardHeader>
         </Card>
 
@@ -88,7 +108,7 @@ export function TarotReadingResult({ reading, candidateName, matchId, candidateI
           </CardHeader>
           <CardContent>
             <div className="prose prose-slate max-w-none">
-              <p className="text-slate-700 leading-relaxed whitespace-pre-line">{reading.interpretation}</p>
+              <AnimatedTextReveal text={reading.interpretation} />
             </div>
           </CardContent>
         </Card>

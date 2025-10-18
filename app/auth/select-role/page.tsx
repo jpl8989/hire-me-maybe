@@ -1,4 +1,3 @@
-"use client"
 import { checkUserRole } from "./actions"
 import RoleSelectionFormComponent from "./role-selection-form"
 

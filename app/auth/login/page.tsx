@@ -19,11 +19,23 @@ export default function LoginPage() {
     setIsLoading(true)
     setError(null)
 
-    const formData = new FormData(e.currentTarget)
-    const result = await signIn(formData)
+    try {
+      const formData = new FormData(e.currentTarget)
+      const result = await signIn(formData)
 
-    if (result?.error) {
-      setError(result.error)
+      if (result?.error) {
+        setError(result.error)
+        setIsLoading(false)
+      }
+    } catch (error: unknown) {
+      // Check if this is a Next.js redirect error (successful login)
+      if (error && typeof error === 'object' && 'digest' in error && 
+          typeof error.digest === 'string' && error.digest.includes('NEXT_REDIRECT')) {
+        // This is a redirect, don't show as error - login was successful
+        return
+      }
+      // Handle other errors
+      setError(error instanceof Error ? error.message : "An error occurred")
       setIsLoading(false)
     }
   }

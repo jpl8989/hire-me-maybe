@@ -40,7 +40,10 @@ export function AudioPlayer({
       // Only auto-play if we have complete audio data
       if (audioData && audioData.length > 1000) { // Ensure we have substantial audio data
         hasAutoPlayedRef.current = true
-        playAudio()
+        // Add a small delay to allow the page to fully load
+        setTimeout(() => {
+          playAudio()
+        }, 1000)
       }
     }
   }, [audioUrl, autoPlay, isPlaying, isLoading, audioData])
@@ -55,6 +58,9 @@ export function AudioPlayer({
       // Set the audio source
       audioRef.current.src = audioUrl
       audioRef.current.volume = isMuted ? 0 : 1
+      
+      // Add autoplay attribute to help with browser compatibility
+      audioRef.current.setAttribute('autoplay', 'true')
       
       // Wait for the audio to be ready to play
       await new Promise((resolve, reject) => {
@@ -83,11 +89,57 @@ export function AudioPlayer({
         }
       })
       
-      // Now try to play
-      await audioRef.current.play()
-      setIsPlaying(true)
+      // Multiple attempts to play with different strategies
+      let playSuccess = false
+      
+      // Strategy 1: Direct play
+      try {
+        await audioRef.current.play()
+        playSuccess = true
+      } catch (error) {
+        console.log('Direct play failed, trying alternative methods...')
+      }
+      
+      // Strategy 2: Try with muted first, then unmute
+      if (!playSuccess) {
+        try {
+          audioRef.current.muted = true
+          await audioRef.current.play()
+          audioRef.current.muted = false
+          playSuccess = true
+        } catch (error) {
+          console.log('Muted play failed, trying click simulation...')
+        }
+      }
+      
+      // Strategy 3: Simulate user interaction programmatically
+      if (!playSuccess) {
+        try {
+          // Create a temporary button and click it to enable audio context
+          const tempButton = document.createElement('button')
+          tempButton.style.display = 'none'
+          document.body.appendChild(tempButton)
+          tempButton.click()
+          document.body.removeChild(tempButton)
+          
+          // Now try to play again
+          await audioRef.current.play()
+          playSuccess = true
+        } catch (error) {
+          console.log('Simulated click failed')
+        }
+      }
+      
+      if (playSuccess) {
+        setIsPlaying(true)
+      } else {
+        console.warn('All play strategies failed - user interaction may be required')
+        setHasError(true)
+        return
+      }
+      
     } catch (error) {
-      console.error('Error playing audio:', error)
+      console.error('Audio play failed:', error)
       setHasError(true)
     } finally {
       setIsLoading(false)
@@ -138,8 +190,11 @@ export function AudioPlayer({
         ref={audioRef}
         onEnded={handleAudioEnd}
         onError={handleAudioError}
-        preload="metadata"
+        preload="auto"
         crossOrigin="anonymous"
+        playsInline
+        autoPlay
+        muted={false}
       />
       
       {/* Play/Pause Button */}
@@ -147,7 +202,7 @@ export function AudioPlayer({
         variant="ghost"
         size="sm"
         onClick={isPlaying ? pauseAudio : playAudio}
-        disabled={isLoading || hasError}
+        disabled={isLoading}
         className="h-8 w-8 p-0 text-purple-600 hover:text-purple-700 hover:bg-purple-50"
       >
         {isLoading ? (
@@ -164,7 +219,7 @@ export function AudioPlayer({
         variant="ghost"
         size="sm"
         onClick={replayAudio}
-        disabled={isLoading || hasError}
+        disabled={isLoading}
         className="h-8 w-8 p-0 text-purple-600 hover:text-purple-700 hover:bg-purple-50"
       >
         <RotateCcw className="h-4 w-4" />
@@ -175,7 +230,7 @@ export function AudioPlayer({
         variant="ghost"
         size="sm"
         onClick={toggleMute}
-        disabled={isLoading || hasError}
+        disabled={isLoading}
         className="h-8 w-8 p-0 text-purple-600 hover:text-purple-700 hover:bg-purple-50"
       >
         {isMuted ? (
@@ -188,7 +243,7 @@ export function AudioPlayer({
       {/* Status Text */}
       <div className="text-xs text-slate-600 ml-2">
         {hasError ? (
-          <span className="text-red-600">Audio unavailable</span>
+          <span className="text-red-600">Click play to start audio</span>
         ) : isLoading ? (
           <span>Loading...</span>
         ) : isPlaying ? (

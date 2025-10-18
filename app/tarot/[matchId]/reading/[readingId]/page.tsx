@@ -4,8 +4,10 @@ import { TarotReadingResult } from "./tarot-reading-result"
 
 export default async function TarotReadingPage({
   params,
+  searchParams,
 }: {
   params: { matchId: string; readingId: string }
+  searchParams?: { img?: string }
 }) {
   const supabase = await createClient()
 
@@ -32,9 +34,11 @@ export default async function TarotReadingPage({
   return (
     <TarotReadingResult
       reading={{
+        id: reading.id,
         cardName: reading.card_name,
         meaning: reading.meaning,
         interpretation: reading.interpretation,
+        image: searchParams?.img ? decodeURIComponent(searchParams.img) : undefined,
       }}
       candidateName={reading.compatibility_matches.candidates.name}
       matchId={params.matchId}

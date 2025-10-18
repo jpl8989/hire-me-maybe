@@ -65,26 +65,27 @@ export function CandidatesList({ candidates, managerId }: CandidatesListProps) {
                   <Badge
                     variant={latestReport.score >= 70 ? "default" : latestReport.score >= 50 ? "secondary" : "outline"}
                   >
-                    📈 {latestReport.score}% Match
+                    {latestReport.score}% Match
                   </Badge>
                 )}
               </div>
               <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                 <div className="flex items-center gap-1">
-                  <span>📅</span>
                   <span>{new Date(candidate.dob).toLocaleDateString('en-US')}</span>
                   <span className="ml-1">at {candidate.birth_time}</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <span>📍</span>
                   <span>{candidate.birth_city}</span>
                 </div>
               </div>
             </div>
             <div className="flex items-center gap-2">
               {hasReport && latestReport ? (
-                <Button asChild variant="default">
-                  <Link href={`/compatibility/${candidate.id}`}>✨ View Report</Link>
+                <Button 
+                  asChild 
+                  className="bg-secondary text-secondary-foreground border-secondary hover:bg-secondary/90 shadow-md hover:shadow-lg transition-all duration-200"
+                >
+                  <Link href={`/compatibility/${candidate.id}`}>View Report</Link>
                 </Button>
               ) : (
                 <Button
@@ -92,7 +93,7 @@ export function CandidatesList({ candidates, managerId }: CandidatesListProps) {
                   disabled={generatingReportFor === candidate.id}
                   variant="outline"
                 >
-                  ✨ {generatingReportFor === candidate.id ? "Generating..." : "Generate Report"}
+                  {generatingReportFor === candidate.id ? "Generating..." : "Generate Report"}
                 </Button>
               )}
             </div>

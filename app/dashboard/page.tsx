@@ -62,7 +62,7 @@ export default async function DashboardPage() {
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2 text-primary">
-            <span className="text-xl font-semibold">Cosmic Compatibility</span>
+            <span className="text-xl font-semibold">HireMeMaybe</span>
           </div>
           <form action="/auth/sign-out" method="post">
             <Button variant="ghost" size="sm" type="submit">
@@ -180,9 +180,14 @@ export default async function DashboardPage() {
                   </div>
                 </div>
                 {hasCompletedProfile && (
-                  <Button asChild variant="outline" className="w-full mt-4 bg-transparent">
-                    <Link href="/birth-data">Edit Profile</Link>
-                  </Button>
+                  <div className="flex gap-2 mt-4">
+                    <Button asChild variant="outline" className="flex-1 bg-transparent">
+                      <Link href="/birth-data">Edit Profile</Link>
+                    </Button>
+                    <Button asChild variant="outline" className="flex-1 bg-transparent">
+                      <Link href="/bazi/me">🔮 View My Bazi</Link>
+                    </Button>
+                  </div>
                 )}
               </CardContent>
             </Card>

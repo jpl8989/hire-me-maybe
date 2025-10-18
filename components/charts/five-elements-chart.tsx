@@ -70,10 +70,6 @@ export function FiveElementsChart({
 
   return (
     <div className="space-y-4">
-      <div className="text-center">
-        <p className="text-sm text-slate-600">Elemental energy comparison</p>
-      </div>
-      
       <div className="w-full h-64 overflow-hidden">
         <ChartContainer
           id="five-elements"

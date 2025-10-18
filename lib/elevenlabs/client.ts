@@ -27,7 +27,7 @@ export class ElevenLabsClient {
    */
   async generateSpeech(
     text: string,
-    voiceId: string = '21m00Tcm4TlvDq8ikWAM', // Rachel voice (calm, meditative female)
+    voiceId: string = 'XrExE9yKIg1WjnnlVkGX', // Matilda voice (warm, calming female)
     voiceSettings: VoiceSettings = {
       stability: 0.5,
       clarity: 0.75,
@@ -97,6 +97,8 @@ export function createElevenLabsClient(): ElevenLabsClient {
  * Recommended voice IDs for tarot readings
  */
 export const VOICE_IDS = {
+  NATASHA: 'Atp5cNFg1Wj5gyKD7HWV', // Natasha - Gentle Meditation voice (ideal for tarot readings)
+  MATILDA: 'XrExE9yKIg1WjnnlVkGX', // Warm, calming female voice
   RACHEL: '21m00Tcm4TlvDq8ikWAM', // Warm, clear female voice
   BELLA: 'EXAVITQu4vr4xnSDxMaL', // Soft, contemplative female voice
   SARAH: '9BWzwMEQadMvhOKlpMx9', // Calm, meditative female voice
@@ -104,9 +106,10 @@ export const VOICE_IDS = {
 
 /**
  * Default voice settings for meditative tarot narration
+ * Optimized for Natasha - Gentle Meditation voice
  */
 export const MEDITATIVE_VOICE_SETTINGS: VoiceSettings = {
-  stability: 0.5,
-  clarity: 0.75,
-  style: 0.3
+  stability: 0.7, // Higher stability for consistent, soothing delivery
+  clarity: 0.8,  // High clarity for clear meditation guidance
+  style: 0.2     // Lower style for gentle, meditative tone
 }

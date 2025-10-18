@@ -39,10 +39,6 @@ export function YinYangChart({
 
   return (
     <div className="space-y-4">
-      <div className="text-center">
-        <p className="text-sm text-slate-600">Energy distribution comparison</p>
-      </div>
-      
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Manager Chart */}
         <div className="space-y-3">

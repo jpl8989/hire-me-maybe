@@ -22,6 +22,12 @@ export default function RoleSelectionForm() {
         setError(result.error)
       }
     } catch (error: unknown) {
+      // Check if this is a Next.js redirect error
+      if (error && typeof error === 'object' && 'digest' in error && 
+          typeof error.digest === 'string' && error.digest.includes('NEXT_REDIRECT')) {
+        // This is a redirect, don't show as error
+        return
+      }
       setError(error instanceof Error ? error.message : "An error occurred")
     } finally {
       setIsLoading(false)

@@ -45,6 +45,13 @@ export default async function CompatibilityPage({ params }: { params: { id: stri
       candidate={{ ...candidate, id: candidate.id }}
       match={{ ...match, id: match.id }}
       managerName={managerData?.name || "Manager"}
+      managerBirthData={{
+        name: managerData?.name || "Manager",
+        dob: managerData?.dob || "",
+        birth_time: managerData?.birth_time || "",
+        birth_city: managerData?.birth_city || "",
+        timezone: managerData?.timezone || ""
+      }}
     />
   )
 }
