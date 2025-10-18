@@ -1,0 +1,44 @@
+import { createClient } from "@/lib/supabase/server"
+import { notFound, redirect } from "next/navigation"
+import { TarotReadingResult } from "./tarot-reading-result"
+
+export default async function TarotReadingPage({
+  params,
+}: {
+  params: { matchId: string; readingId: string }
+}) {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect("/auth/login")
+  }
+
+  // Get the tarot reading
+  const { data: reading } = await supabase
+    .from("tarot_readings")
+    .select("*, compatibility_matches(*, candidates(*))")
+    .eq("id", params.readingId)
+    .eq("match_id", params.matchId)
+    .maybeSingle()
+
+  if (!reading || reading.compatibility_matches.manager_id !== user.id) {
+    notFound()
+  }
+
+  return (
+    <TarotReadingResult
+      reading={{
+        cardName: reading.card_name,
+        meaning: reading.meaning,
+        interpretation: reading.interpretation,
+      }}
+      candidateName={reading.compatibility_matches.candidates.name}
+      matchId={params.matchId}
+      candidateId={reading.compatibility_matches.candidates.id}
+    />
+  )
+}
