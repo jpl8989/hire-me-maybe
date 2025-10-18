@@ -5,13 +5,15 @@
 
 export interface VoiceSettings {
   stability: number
-  clarity: number
+  similarity_boost: number
   style: number
+  use_speaker_boost?: boolean
 }
 
 export interface AudioResponse {
   audioData: ArrayBuffer
   error?: string
+  status?: number
 }
 
 export class ElevenLabsClient {
@@ -30,10 +32,61 @@ export class ElevenLabsClient {
     voiceId: string = 'XrExE9yKIg1WjnnlVkGX', // Matilda voice (warm, calming female)
     voiceSettings: VoiceSettings = {
       stability: 0.5,
-      clarity: 0.75,
-      style: 0.3
+      similarity_boost: 0.75,
+      style: 0.3,
+      use_speaker_boost: true
     }
   ): Promise<AudioResponse> {
+    const primaryModel = 'eleven_turbo_v2_5'
+    const fallbackModel = 'eleven_monolingual_v1'
+
+    const primaryAttempt = await this.requestSpeech({ text, voiceId, modelId: primaryModel, voiceSettings })
+    if (!primaryAttempt.error) {
+      return primaryAttempt
+    }
+
+    const shouldFallback =
+      !primaryAttempt.status ||
+      /model/i.test(primaryAttempt.error ?? '') ||
+      (typeof primaryAttempt.status === 'number' && primaryAttempt.status >= 500)
+
+    if (!shouldFallback) {
+      return primaryAttempt
+    }
+
+    console.warn(
+      `ElevenLabs primary model "${primaryModel}" failed (${primaryAttempt.status}). Trying fallback model "${fallbackModel}"...`
+    )
+
+    const fallbackAttempt = await this.requestSpeech({
+      text,
+      voiceId,
+      modelId: fallbackModel,
+      voiceSettings,
+    })
+
+    if (!fallbackAttempt.error) {
+      return fallbackAttempt
+    }
+
+    return {
+      audioData: new ArrayBuffer(0),
+      error: [primaryAttempt.error, fallbackAttempt.error].filter(Boolean).join('\nFallback: '),
+      status: fallbackAttempt.status,
+    }
+  }
+
+  private async requestSpeech({
+    text,
+    voiceId,
+    modelId,
+    voiceSettings,
+  }: {
+    text: string
+    voiceId: string
+    modelId: string
+    voiceSettings: VoiceSettings
+  }): Promise<AudioResponse> {
     try {
       const response = await fetch(`${this.baseUrl}/text-to-speech/${voiceId}`, {
         method: 'POST',
@@ -44,7 +97,7 @@ export class ElevenLabsClient {
         },
         body: JSON.stringify({
           text,
-          model_id: 'eleven_monolingual_v1',
+          model_id: modelId,
           voice_settings: voiceSettings,
         }),
       })
@@ -54,17 +107,18 @@ export class ElevenLabsClient {
         console.error('ElevenLabs API error:', response.status, errorText)
         return {
           audioData: new ArrayBuffer(0),
-          error: `API Error: ${response.status} - ${errorText}`
+          error: `API Error (${modelId}): ${response.status} - ${errorText}`,
+          status: response.status,
         }
       }
 
       const audioData = await response.arrayBuffer()
-      return { audioData }
+      return { audioData, status: response.status }
     } catch (error) {
       console.error('ElevenLabs client error:', error)
       return {
         audioData: new ArrayBuffer(0),
-        error: error instanceof Error ? error.message : 'Unknown error occurred'
+        error: error instanceof Error ? error.message : 'Unknown error occurred',
       }
     }
   }
@@ -110,6 +164,7 @@ export const VOICE_IDS = {
  */
 export const MEDITATIVE_VOICE_SETTINGS: VoiceSettings = {
   stability: 0.7, // Higher stability for consistent, soothing delivery
-  clarity: 0.8,  // High clarity for clear meditation guidance
-  style: 0.2     // Lower style for gentle, meditative tone
+  similarity_boost: 0.8, // High similarity for clear meditation guidance
+  style: 0.2,            // Lower style for gentle, meditative tone
+  use_speaker_boost: true
 }

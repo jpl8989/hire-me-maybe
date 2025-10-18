@@ -12,9 +12,10 @@ export async function updateSession(request: NextRequest) {
         return request.cookies.getAll()
       },
       setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+        // In middleware, request cookies are read-only. We must set cookies on the response,
+        // and re-create the response with forwarded headers to ensure cookies are applied.
         supabaseResponse = NextResponse.next({
-          request,
+          request: { headers: new Headers(request.headers) },
         })
         cookiesToSet.forEach(({ name, value, options }) => supabaseResponse.cookies.set(name, value, options))
       },

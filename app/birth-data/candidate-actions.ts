@@ -1,7 +1,6 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
-import { calculateCompatibility } from "@/lib/compatibility/calculate"
 
 export async function saveCandidate(formData: FormData) {
   const supabase = await createClient()
@@ -34,18 +33,13 @@ export async function saveCandidate(formData: FormData) {
     return { error: "Failed to save candidate data. Please try again." }
   }
 
-  const { data: managerBirthData } = await supabase.from("birth_data").select("*").eq("user_id", user.id).maybeSingle()
-
+  // Ensure manager has a profile; we don't block on compatibility generation here
+  const { data: managerBirthData } = await supabase.from("birth_data").select("id").eq("user_id", user.id).maybeSingle()
   if (!managerBirthData) {
     return { error: "Please complete your profile first before adding candidates." }
   }
 
-  const compatibilityResult = await calculateCompatibility(user.id, candidate.id)
-
-  if (!compatibilityResult.success) {
-    console.error("Error calculating compatibility:", compatibilityResult.error)
-    return { error: compatibilityResult.error || "Failed to calculate compatibility" }
-  }
-
+  // Instant path: return the new candidate ID; the prepare page will create the match
+  // and kick off compatibility analysis in the background for fast navigation.
   return { success: true, candidateId: candidate.id }
 }

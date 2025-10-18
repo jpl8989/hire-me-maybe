@@ -50,11 +50,16 @@ export async function generateReadingAudio(
   try {
     const client = createElevenLabsClient()
 
-    const readingText = `The card you have drawn is ${cardName}. ${meaning}. 
+    // ElevenLabs can error on extremely long inputs or unsupported characters.
+    const sanitize = (text: string) =>
+      text
+        .replace(/\s+/g, ' ')
+        .replace(/[\u0000-\u001F\u007F]/g, '')
+        .slice(0, 1400) // keep prompt concise for reliability
 
-Your reading for ${candidateName}: ${interpretation}
-
-May this guidance illuminate your path.`
+    const readingText = `The card you have drawn is ${sanitize(cardName)}. ${sanitize(meaning)}. ` +
+      `Your reading for ${sanitize(candidateName)}: ${sanitize(interpretation)}. ` +
+      `May this guidance illuminate your path.`
 
     const result = await client.generateSpeech(
       readingText,

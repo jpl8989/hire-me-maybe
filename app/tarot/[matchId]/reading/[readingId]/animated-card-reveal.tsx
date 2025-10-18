@@ -48,7 +48,7 @@ export function AnimatedCardReveal({
     <div className="flex flex-col items-center space-y-8">
       {/* Card with animation and static image */}
       <div className="relative">
-        <div className="relative w-48 h-72 mx-auto">
+        <div className="relative aspect-[2/3] w-[70vw] max-w-[420px] md:max-w-[520px] lg:max-w-[640px] mx-auto">
           {/* Card back */}
           <div 
             className={`absolute w-full h-full rounded-xl overflow-hidden shadow-xl border-2 border-purple-400/30 transition-opacity duration-1000 ${
@@ -57,9 +57,9 @@ export function AnimatedCardReveal({
           >
             <div className="w-full h-full bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-800 flex flex-col items-center justify-center">
               <div className="flex flex-col items-center justify-center space-y-2">
-                <div className="w-16 h-16 rounded-full border-2 border-white/40 flex items-center justify-center">
-                  <div className="w-12 h-12 flex items-center justify-center">
-                    <div className="text-white text-2xl opacity-70">✦</div>
+                <div className="w-24 h-24 rounded-full border-2 border-white/40 flex items-center justify-center">
+                  <div className="w-16 h-16 flex items-center justify-center">
+                    <div className="text-white text-3xl opacity-70">✦</div>
                   </div>
                 </div>
               </div>
@@ -76,8 +76,7 @@ export function AnimatedCardReveal({
               <Image
                 src={imageUrl}
                 alt={selectedCard.name}
-                width={192}
-                height={288}
+                fill
                 className="w-full h-full object-cover rounded-xl"
                 onError={() => setGenerationFailed(true)}
               />
@@ -85,8 +84,7 @@ export function AnimatedCardReveal({
               <Image
                 src={selectedCard.image}
                 alt={selectedCard.name}
-                width={192}
-                height={288}
+                fill
                 className="w-full h-full object-cover rounded-xl"
               />
             ) : (
@@ -98,8 +96,8 @@ export function AnimatedCardReveal({
 
       {/* Card details */}
       <div className={`transition-opacity duration-700 delay-500 ${isFlipped ? 'opacity-100' : 'opacity-0'}`}>
-        <h3 className="text-3xl font-serif text-center">{selectedCard.name}</h3>
-        <p className="text-base italic text-center text-slate-600 mt-2">{selectedCard.mantra}</p>
+        <h3 className="text-3xl font-serif text-center text-white">{selectedCard.name}</h3>
+        <p className="text-base italic text-center text-white/70 mt-2">{selectedCard.mantra}</p>
       </div>
     </div>
   )

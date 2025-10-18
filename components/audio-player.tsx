@@ -185,7 +185,8 @@ export function AudioPlayer({
   }
 
   return (
-    <div className={`flex items-center gap-2 p-3 bg-white/80 backdrop-blur-sm rounded-lg border border-purple-200 shadow-sm ${className}`}>
+    <div className={`relative flex items-center gap-3 h-12 px-4 bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_8px_24px_-8px_rgba(0,0,0,0.6)] ring-1 ring-white/5 ${className}`}>
+      <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-b from-white/10 to-transparent" />
       <audio
         ref={audioRef}
         onEnded={handleAudioEnd}
@@ -203,7 +204,7 @@ export function AudioPlayer({
         size="sm"
         onClick={isPlaying ? pauseAudio : playAudio}
         disabled={isLoading}
-        className="h-8 w-8 p-0 text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+        className="h-8 w-8 p-0 text-white/80 hover:text-white hover:bg-white/10 focus-visible:ring-white/20 focus-visible:border-white/20 disabled:text-white/40"
       >
         {isLoading ? (
           <Loader2 className="h-4 w-4 animate-spin" />
@@ -220,7 +221,7 @@ export function AudioPlayer({
         size="sm"
         onClick={replayAudio}
         disabled={isLoading}
-        className="h-8 w-8 p-0 text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+        className="h-8 w-8 p-0 text-white/80 hover:text-white hover:bg-white/10 focus-visible:ring-white/20 focus-visible:border-white/20 disabled:text-white/40"
       >
         <RotateCcw className="h-4 w-4" />
       </Button>
@@ -231,7 +232,7 @@ export function AudioPlayer({
         size="sm"
         onClick={toggleMute}
         disabled={isLoading}
-        className="h-8 w-8 p-0 text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+        className="h-8 w-8 p-0 text-white/80 hover:text-white hover:bg-white/10 focus-visible:ring-white/20 focus-visible:border-white/20 disabled:text-white/40"
       >
         {isMuted ? (
           <VolumeX className="h-4 w-4" />
@@ -241,9 +242,9 @@ export function AudioPlayer({
       </Button>
 
       {/* Status Text */}
-      <div className="text-xs text-slate-600 ml-2">
+      <div className="text-xs ml-2 text-white/80">
         {hasError ? (
-          <span className="text-red-600">Click play to start audio</span>
+          <span className="text-red-400">Click play to start audio</span>
         ) : isLoading ? (
           <span>Loading...</span>
         ) : isPlaying ? (

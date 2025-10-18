@@ -146,25 +146,53 @@ export async function calculateCompatibility(
 
     console.log("[v0] Compatibility calculated, score:", result.score)
 
-    const { data: matchData, error: insertError } = await supabase
+    // If a match already exists for this manager/candidate, update it; otherwise insert a new one
+    const { data: existingMatch } = await supabase
       .from("compatibility_matches")
-      .insert({
-        manager_id: managerId,
-        candidate_id: candidateId,
-        score: result.score,
-        analysis: result.analysis,
-      })
       .select("id")
-      .single()
+      .eq("manager_id", managerId)
+      .eq("candidate_id", candidateId)
+      .maybeSingle()
 
-    if (insertError) {
-      console.error("[v0] Error saving compatibility match:", insertError)
-      return { success: false, error: "Failed to save compatibility report" }
+    if (existingMatch?.id) {
+      const { data: updated, error: updateError } = await supabase
+        .from("compatibility_matches")
+        .update({
+          score: result.score,
+          analysis: result.analysis,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", existingMatch.id)
+        .select("id")
+        .single()
+
+      if (updateError) {
+        console.error("[v0] Error updating compatibility match:", updateError)
+        return { success: false, error: "Failed to save compatibility report" }
+      }
+
+      console.log("[v0] Compatibility match updated with ID:", updated.id)
+      return { success: true, matchId: updated.id }
+    } else {
+      const { data: matchData, error: insertError } = await supabase
+        .from("compatibility_matches")
+        .insert({
+          manager_id: managerId,
+          candidate_id: candidateId,
+          score: result.score,
+          analysis: result.analysis,
+        })
+        .select("id")
+        .single()
+
+      if (insertError) {
+        console.error("[v0] Error saving compatibility match:", insertError)
+        return { success: false, error: "Failed to save compatibility report" }
+      }
+
+      console.log("[v0] Compatibility match saved with ID:", matchData.id)
+      return { success: true, matchId: matchData.id }
     }
-
-    console.log("[v0] Compatibility match saved with ID:", matchData.id)
-
-    return { success: true, matchId: matchData.id }
   } catch (error) {
     console.error("[v0] Error in calculateCompatibility:", error)
     return { success: false, error: error instanceof Error ? error.message : "Unknown error" }

@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { saveCandidate } from "@/app/birth-data/candidate-actions"
+// createMatchAndAnalyzeInBackground is now called on the prepare page for instant navigation
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -29,18 +30,17 @@ export function AddCandidateForm() {
     }
 
     if (result?.success && result?.candidateId) {
-      router.push(`/compatibility/${result.candidateId}`)
+      const name = formData.get("candidate_name") as string
+      // Include a source flag so downstream pages can adjust back navigation
+      router.push(`/tarot/prepare?candidateId=${result.candidateId}&candidateName=${encodeURIComponent(name)}&from=add`)
     }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl">
+    <div className="min-h-screen oa-gradient starfield vignette flex items-center justify-center p-4">
+      <Card className="w-full max-w-2xl bg-white text-black edge-glow">
         <CardHeader className="text-center space-y-2">
-          <div className="flex justify-center mb-2">
-            <div className="p-3 bg-purple-100 rounded-full text-3xl">👤</div>
-          </div>
-          <CardTitle className="text-2xl">Add New Candidate</CardTitle>
+          <CardTitle className="text-3xl font-serif">Add New Candidate</CardTitle>
           <CardDescription>Enter candidate birth details for compatibility analysis</CardDescription>
         </CardHeader>
         <CardContent>
@@ -53,7 +53,6 @@ export function AddCandidateForm() {
 
           <form action={handleSubmit} className="space-y-6">
             <div className="space-y-4">
-              <h3 className="font-semibold text-lg">Candidate Information</h3>
 
               <div className="space-y-2">
                 <Label htmlFor="candidate_name">Candidate Name *</Label>
@@ -114,7 +113,7 @@ export function AddCandidateForm() {
             )}
 
             <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? "Calculating Compatibility..." : "Calculate Compatibility"}
+              {isSubmitting ? "Starting Tarot..." : "Continue to Tarot"}
             </Button>
           </form>
         </CardContent>

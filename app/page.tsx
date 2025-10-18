@@ -1,30 +1,42 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import Link from "next/link"
+import { Cormorant_Garamond, Inter } from "next/font/google"
+
+const display = Cormorant_Garamond({
+  subsets: ["latin"],
+  weight: ["600", "700"],
+  variable: "--font-display",
+})
+const ui = Inter({ subsets: ["latin"], variable: "--font-ui" })
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-gradient-to-r from-[#a8b88f] to-[#d4d4a8]">
+    <div className={`theme-obsidian-aurum oa-gradient min-h-screen ${display.variable} ${ui.variable}`}>
       {/* Hero Section */}
-      <div className="container mx-auto px-4 py-16 md:py-24">
-        <div className="flex flex-col items-center text-center gap-8 max-w-4xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/80 backdrop-blur-sm text-foreground text-sm font-medium border border-border/50">
+      <section className="starfield vignette">
+        <div className="container mx-auto px-4 py-20 md:py-28">
+          <div className="flex flex-col items-center text-center gap-8 max-w-4xl mx-auto">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-card backdrop-blur-sm text-foreground text-sm font-medium border border-border/50">
             <span>✨</span>
             <span>AI-Powered Compatibility Analysis</span>
           </div>
 
-          <h1 className="text-5xl md:text-7xl font-serif font-bold tracking-tight text-balance">HireMeMaybe</h1>
+          <h1 className="text-6xl md:text-8xl font-display font-bold leading-[1.1] tracking-[0.01em] text-balance text-foreground">
+            HireMe<span className="italic">Maybe</span>
+          </h1>
 
           <h2 className="text-2xl md:text-3xl font-normal text-muted-foreground text-balance">
-            Discover Workplace Compatibility Through BaZi Astrology
+            Let the Universe Guide Your Hiring Decisions
           </h2>
 
           <p className="text-lg md:text-xl text-muted-foreground text-balance max-w-2xl">
-            Harness the power of BaZi astrology and AI to understand team dynamics, optimize hiring decisions, and build
-            harmonious work relationships.
+            Discover workplace compatibility through cosmic readings powered by Tarot, BaZi astrology, and a little magic.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 mt-4">
+          <div className="hr-star mx-auto mt-8 w-40" />
+
+          <div className="flex flex-col sm:flex-row gap-4 mt-6">
             <Button asChild size="lg" className="text-lg px-8">
               <Link href="/auth/sign-up">Get Started</Link>
             </Button>
@@ -32,16 +44,32 @@ export default function HomePage() {
               asChild
               size="lg"
               variant="outline"
-              className="text-lg px-8 bg-white/80 backdrop-blur-sm hover:bg-white/90"
+              className="text-lg px-8 border-[var(--primary)] text-[var(--primary)] hover:bg-[var(--primary)] hover:text-[var(--primary-foreground)]"
             >
               <Link href="/auth/login">Sign In</Link>
             </Button>
           </div>
+          </div>
         </div>
+      </section>
 
-        {/* Features Grid */}
-        <div className="grid md:grid-cols-3 gap-6 mt-24 max-w-5xl mx-auto">
-          <Card className="border-2 bg-white/80 backdrop-blur-sm">
+      {/* Proof Strip */}
+      <section className="border-t border-border">
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-muted-foreground">
+            <span>7k+ compatibility matches</span>
+            <span className="hidden sm:inline">•</span>
+            <span>Backed by BaZi principles</span>
+            <span className="hidden sm:inline">•</span>
+            <span>Actionable AI insights</span>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Grid */}
+      <section>
+        <div className="grid md:grid-cols-3 gap-6 py-16 md:py-24 max-w-5xl mx-auto px-4">
+          <Card className="border bg-card">
             <CardContent className="pt-6">
               <div className="flex flex-col items-center text-center gap-4">
                 <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center text-2xl">✨</div>
@@ -53,7 +81,7 @@ export default function HomePage() {
             </CardContent>
           </Card>
 
-          <Card className="border-2 bg-white/80 backdrop-blur-sm">
+          <Card className="border bg-card">
             <CardContent className="pt-6">
               <div className="flex flex-col items-center text-center gap-4">
                 <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center text-2xl">👥</div>
@@ -65,7 +93,7 @@ export default function HomePage() {
             </CardContent>
           </Card>
 
-          <Card className="border-2 bg-white/80 backdrop-blur-sm">
+          <Card className="border bg-card">
             <CardContent className="pt-6">
               <div className="flex flex-col items-center text-center gap-4">
                 <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center text-2xl">📈</div>
@@ -77,7 +105,17 @@ export default function HomePage() {
             </CardContent>
           </Card>
         </div>
-      </div>
+      </section>
+
+      {/* CTA Band */}
+      <section className="border-t border-border">
+        <div className="container mx-auto px-4 py-16 md:py-20 text-center">
+          <h3 className="text-2xl md:text-3xl mb-6 text-foreground">Ready to explore your team’s cosmic fit?</h3>
+          <Button asChild size="lg" className="text-lg px-8">
+            <Link href="/auth/sign-up">Create your free account</Link>
+          </Button>
+        </div>
+      </section>
     </div>
   )
 }

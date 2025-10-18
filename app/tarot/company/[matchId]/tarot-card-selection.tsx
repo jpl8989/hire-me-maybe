@@ -6,52 +6,42 @@ import { Button } from "@/components/ui/button"
 import { TAROT_CARDS, TarotCard } from "@/lib/tarot/cards"
 import { generateIntroAudio } from "./voice-actions"
 import { AudioPlayer } from "@/components/audio-player"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
-import { generateTarotReading } from "./actions"
+import { generateCompanyTarotReading } from "./actions"
 
-interface TarotCardSelectionProps {
+interface CompanyTarotCardSelectionProps {
   matchId: string
-  candidateName: string
-  candidateId: string
+  candidateName: string // reused label; actually company name
+  candidateId: string // company id (unused for now)
 }
 
-export function TarotCardSelection({ matchId, candidateName, candidateId }: TarotCardSelectionProps) {
+export function TarotCardSelection({ matchId, candidateName, candidateId }: CompanyTarotCardSelectionProps) {
   const [selectedCard, setSelectedCard] = useState<TarotCard | null>(null)
   const [introAudio, setIntroAudio] = useState<{ audioData: string; mimeType: string } | null>(null)
   const [randomCards] = useState<TarotCard[]>(() => {
-    // Shuffle all 12 cards for randomization
     const shuffled = [...TAROT_CARDS]
     for (let i = shuffled.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1))
       ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
     }
-    
-    console.log('Shuffled cards:', shuffled.map(c => c.name))
     return shuffled
   })
   const [imageLoaded, setImageLoaded] = useState<boolean>(false)
   const [imageError, setImageError] = useState<boolean>(false)
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const from = searchParams.get('from') || ''
 
-  // Enable audio context after first user interaction
   useEffect(() => {
     const enableAudioContext = async () => {
       try {
-        // Try to enable audio context on first user interaction
         const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
         if (audioContext.state === 'suspended') {
           await audioContext.resume()
         }
-      } catch (error) {
-        // Audio context not available or already enabled
-      }
+      } catch {}
     }
 
-    // Listen for any user interaction to enable audio
     const handleUserInteraction = () => {
       enableAudioContext()
       document.removeEventListener('click', handleUserInteraction)
@@ -70,39 +60,26 @@ export function TarotCardSelection({ matchId, candidateName, candidateId }: Taro
     }
   }, [])
 
-  // Generate intro audio on component mount
   useEffect(() => {
     const loadIntroAudio = async () => {
       try {
         const result = await generateIntroAudio(candidateName)
         if (result.success && result.audioData && result.audioData.length > 1000) {
-          setIntroAudio({
-            audioData: result.audioData,
-            mimeType: result.mimeType || 'audio/mpeg'
-          })
+          setIntroAudio({ audioData: result.audioData, mimeType: result.mimeType || 'audio/mpeg' })
         }
-      } catch (error) {
-        console.error('Failed to load intro audio:', error)
-      }
+      } catch {}
     }
-
-    // Add a small delay to ensure the page is fully loaded before generating audio
-    const timer = setTimeout(() => {
-      loadIntroAudio()
-    }, 500)
-
+    const timer = setTimeout(() => { loadIntroAudio() }, 500)
     return () => clearTimeout(timer)
   }, [candidateName])
 
   const handleCardSelect = async (card: TarotCard) => {
     try {
       setSelectedCard(card)
-      const res = await generateTarotReading(matchId, card.name)
+      const res = await generateCompanyTarotReading(matchId, card.name)
       if (res?.success && res.reading?.id) {
         const img = encodeURIComponent(res.imageUrl || res.reading.image || "")
-        // Preserve source flag if present
-        const suffix = from ? `&from=${encodeURIComponent(from)}` : ""
-        router.push(`/tarot/${matchId}/reading/${res.reading.id}?img=${img}${suffix}`)
+        router.push(`/tarot/company/${matchId}/reading/${res.reading.id}?img=${img}`)
       } else {
         console.error('Failed to create reading:', res?.error)
       }
@@ -115,20 +92,13 @@ export function TarotCardSelection({ matchId, candidateName, candidateId }: Taro
     <div className="min-h-screen theme-obsidian-aurum oa-gradient starfield vignette p-4 md:p-8">
       <div className="max-w-6xl mx-auto space-y-6">
         <Button asChild variant="ghost" size="sm" className="text-slate-200">
-          {from === 'add' ? (
-            <Link href={`/dashboard`}>
-              <span className="mr-2">←</span>
-              Back to Dashboard
-            </Link>
-          ) : (
-            <Link href={`/compatibility/${candidateId}`}>
-              <span className="mr-2">←</span>
-              Back to Report
-            </Link>
-          )}
+          <Link href={`/dashboard`}>
+            <span className="mr-2">←</span>
+            Back to Dashboard
+          </Link>
         </Button>
 
-        <Card className="border border-white/10 bg-black/40 backdrop-blur edge-glow">
+        <Card className="border border-white/10 bg-black/40 backdrop-blur edge-glow text-white">
           <CardHeader className="text-center space-y-2">
             <CardTitle className="text-3xl font-serif text-white">Tarot Reading</CardTitle>
             <CardDescription className="text-base text-slate-300">
@@ -136,7 +106,6 @@ export function TarotCardSelection({ matchId, candidateName, candidateId }: Taro
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Audio Player */}
             {introAudio && (
               <div className="flex justify-center">
                 <AudioPlayer
@@ -152,7 +121,6 @@ export function TarotCardSelection({ matchId, candidateName, candidateId }: Taro
               <p>Choose a card that calls to you. Trust your intuition.</p>
             </div>
 
-            {/* 4x3 grid layout - 4 columns on desktop, responsive on mobile */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-w-4xl mx-auto">
               {randomCards.length > 0 ? randomCards.map((card, index) => (
                 <button
@@ -160,18 +128,11 @@ export function TarotCardSelection({ matchId, candidateName, candidateId }: Taro
                   onClick={() => handleCardSelect(card)}
                   className={`
                     relative aspect-[2/3] rounded-xl transition-all duration-300
-                    ${
-                      selectedCard?.name === card.name
-                        ? "scale-95 shadow-xl"
-                        : "hover:scale-105 hover:shadow-2xl"
-                    }
-                    cursor-pointer
-                    group
+                    ${selectedCard?.name === card.name ? "scale-95 shadow-xl" : "hover:scale-105 hover:shadow-2xl"}
+                    cursor-pointer group
                   `}
                 >
-                  {/* Card back - all cards look identical */}
                   <div className="w-full h-full rounded-xl overflow-hidden shadow-lg border-2 border-yellow-500/30 relative">
-                    {/* Your uploaded card back image */}
                     {!imageError ? (
                       <Image
                         src="/tarot-card-back.jpg"
@@ -181,21 +142,16 @@ export function TarotCardSelection({ matchId, candidateName, candidateId }: Taro
                         className="w-full h-full object-cover rounded-xl"
                         onLoad={() => setImageLoaded(true)}
                         onError={() => setImageError(true)}
-                        priority={index < 4} // Prioritize loading first 4 images
+                        priority={index < 4}
                       />
                     ) : (
-                      /* Fallback CSS design */
                       <div className="w-full h-full bg-gradient-to-br from-amber-600 via-amber-700 to-zinc-900 flex flex-col items-center justify-center">
-                        {/* Mystical symbol in center */}
                         <div className="flex flex-col items-center justify-center space-y-2">
-                          {/* Outer circle */}
                           <div className="w-12 h-12 rounded-full border-2 border-white/40 flex items-center justify-center">
-                            {/* Inner mystical symbol */}
                             <div className="w-8 h-8 flex items-center justify-center">
                               <div className="text-white text-xl opacity-70">✦</div>
                             </div>
                           </div>
-                          {/* Corner decorations */}
                           <div className="absolute top-3 left-3 w-3 h-3 border border-white/30 rounded-sm" />
                           <div className="absolute top-3 right-3 w-3 h-3 border border-white/30 rounded-sm" />
                           <div className="absolute bottom-3 left-3 w-3 h-3 border border-white/30 rounded-sm" />
@@ -203,11 +159,7 @@ export function TarotCardSelection({ matchId, candidateName, candidateId }: Taro
                         </div>
                       </div>
                     )}
-                    
-                    {/* Subtle hover glow effect */}
                     <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    
-                    {/* Mystical sparkle on hover */}
                     <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                       <div className="absolute top-4 left-4 w-2 h-2 bg-white rounded-full animate-pulse" />
                       <div className="absolute top-8 right-6 w-1 h-1 bg-yellow-200 rounded-full animate-pulse delay-100" />
@@ -230,3 +182,6 @@ export function TarotCardSelection({ matchId, candidateName, candidateId }: Taro
     </div>
   )
 }
+
+
+

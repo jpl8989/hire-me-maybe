@@ -2,9 +2,8 @@ import { createClient } from "@/lib/supabase/server"
 import { notFound, redirect } from "next/navigation"
 import { TarotCardSelection } from "./tarot-card-selection"
 
-export default async function TarotPage({ params }: { params: Promise<{ matchId: string }> }) {
+export default async function CompanyTarotPage({ params }: { params: { matchId: string } }) {
   const supabase = await createClient()
-  const { matchId } = await params
 
   const {
     data: { user },
@@ -14,11 +13,10 @@ export default async function TarotPage({ params }: { params: Promise<{ matchId:
     redirect("/auth/login")
   }
 
-  // Verify the match belongs to this manager
   const { data: match } = await supabase
-    .from("compatibility_matches")
-    .select("*, candidates(*)")
-    .eq("id", matchId)
+    .from("company_compatibility_matches")
+    .select("*, companies(*)")
+    .eq("id", params.matchId)
     .eq("manager_id", user.id)
     .maybeSingle()
 
@@ -28,9 +26,11 @@ export default async function TarotPage({ params }: { params: Promise<{ matchId:
 
   return (
     <TarotCardSelection
-      matchId={matchId}
-      candidateName={match.candidates.name}
-      candidateId={match.candidates.id}
+      matchId={params.matchId}
+      candidateName={match.companies.name}
+      candidateId={match.companies.id}
     />
   )
 }
+
+

@@ -2,8 +2,9 @@ import { createClient } from "@/lib/supabase/server"
 import { notFound, redirect } from "next/navigation"
 import { CompatibilityResults } from "./compatibility-results"
 
-export default async function CompatibilityPage({ params }: { params: { id: string } }) {
+export default async function CompatibilityPage({ params }: { params: Promise<{ id: string }> }) {
   const supabase = await createClient()
+  const { id } = await params
 
   const {
     data: { user },
@@ -17,7 +18,7 @@ export default async function CompatibilityPage({ params }: { params: { id: stri
   const { data: candidate } = await supabase
     .from("candidates")
     .select("*")
-    .eq("id", params.id)
+    .eq("id", id)
     .eq("manager_id", user.id)
     .maybeSingle()
 
@@ -29,7 +30,7 @@ export default async function CompatibilityPage({ params }: { params: { id: stri
   const { data: match } = await supabase
     .from("compatibility_matches")
     .select("*")
-    .eq("candidate_id", params.id)
+    .eq("candidate_id", id)
     .eq("manager_id", user.id)
     .maybeSingle()
 

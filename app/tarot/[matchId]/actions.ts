@@ -49,9 +49,7 @@ export async function generateTarotReading(matchId: string, cardName: string) {
             prompt,
             width: 512,
             height: 768,
-          },
-          logs: true,
-          timeout: 15000,
+          }
         })) as any
         if (result?.images?.[0]?.url) return result.images[0].url
         if (result?.image?.url) return result.image.url
@@ -64,8 +62,32 @@ export async function generateTarotReading(matchId: string, cardName: string) {
 
     // Generate AI interpretation if possible; otherwise fall back to a deterministic template
     let interpretation: string | undefined
+    const hasAnalysis = !!(
+      typeof match.score === "number" &&
+      (match as any).analysis &&
+      (match as any).analysis.summary &&
+      Array.isArray((match as any).analysis.strengths) &&
+      Array.isArray((match as any).analysis.challenges)
+    )
+
     if (process.env.OPENAI_API_KEY) {
       try {
+        const messages = [
+          {
+            role: "system",
+            content:
+              "You are a mystical spirit guide focused on workplace compatibility and hiring decisions. Always speak directly to the manager using 'you'. Refer to the candidate by their first name. Keep it concise (4–6 sentences, ~120 words). No headings or bullet points. Blend spiritual wisdom with practical, actionable guidance.",
+          },
+          {
+            role: "user",
+            content: (
+              hasAnalysis
+                ? `I've drawn the spirit oracle card "${card.name}" in the context of a hiring decision.\n\nContext:\n- Manager: you\n- Candidate: ${match.candidates.name}\n\nCard Details:\n- Mantra: "${card.mantra}"\n- Essence: ${card.essence}\n- Full Meaning: ${card.meaning}\n- Keywords: ${card.upright}\n- Affirmation: "${card.affirmation}"\n\nCompatibility Analysis:\n- Overall score: ${match.score}%\n- Summary: ${(match as any).analysis.summary}\n- Strengths: ${(match as any).analysis.strengths.join(", ")}\n- Challenges: ${(match as any).analysis.challenges.join(", ")}\n\nInstructions for the reading:\n- Speak directly to the manager using "you" (not third-person).\n- Refer to the candidate as "${match.candidates.name}".\n- Be concise: 4–6 sentences (~120 words), no bullets or headings.\n- Connect the card's energy to this specific hiring decision and the compatibility dynamics.\n- Offer actionable guidance grounded in the card's message.`
+                : `I've drawn the spirit oracle card "${card.name}" in the context of a hiring decision.\n\nContext:\n- Manager: you\n- Candidate: ${match.candidates.name}\n\nCard Details:\n- Mantra: "${card.mantra}"\n- Essence: ${card.essence}\n- Full Meaning: ${card.meaning}\n- Keywords: ${card.upright}\n- Affirmation: "${card.affirmation}"\n\nInstructions for the reading:\n- Speak directly to the manager using "you" (not third-person).\n- Refer to the candidate as "${match.candidates.name}".\n- Be concise: 4–6 sentences (~120 words), no bullets or headings.\n- Connect the card's energy to this specific hiring decision.\n- Offer actionable guidance grounded in the card's message.`
+            ),
+          },
+        ]
+
         const response = await fetch("https://api.openai.com/v1/chat/completions", {
           method: "POST",
           headers: {
@@ -74,18 +96,9 @@ export async function generateTarotReading(matchId: string, cardName: string) {
           },
           body: JSON.stringify({
             model: "gpt-4o-mini",
-            messages: [
-              {
-                role: "system",
-                content:
-                  "You are a mystical spirit guide who specializes in workplace compatibility and hiring decisions. You work with spirit oracle cards that offer wisdom and guidance. Provide insightful, practical interpretations that blend spiritual wisdom with professional guidance.",
-              },
-              {
-                role: "user",
-                content: `I've drawn the spirit oracle card "${card.name}" in the context of a hiring decision.\n\nCard Details:\n- Mantra: "${card.mantra}"\n- Essence: ${card.essence}\n- Full Meaning: ${card.meaning}\n- Keywords: ${card.upright}\n- Affirmation: "${card.affirmation}"\n\nCompatibility Analysis:\n- Overall score: ${match.score}%\n- Summary: ${match.analysis.summary}\n- Strengths: ${match.analysis.strengths.join(", " )}\n- Challenges: ${match.analysis.challenges.join(", " )}\n\nPlease provide a spirit oracle reading that:\n1. Interprets this card's energy for this specific hiring decision\n2. References the card's essence and keywords\n3. Connects the spiritual wisdom to the compatibility dynamics\n4. Offers practical guidance based on the card's message\n5. Maintains a mystical yet actionable tone (2-3 paragraphs)`,
-              },
-            ],
+            messages,
             temperature: 0.8,
+            max_tokens: 220,
           }),
         })
         if (response.ok) {
@@ -97,7 +110,9 @@ export async function generateTarotReading(matchId: string, cardName: string) {
 
     // Fallback interpretation if OpenAI is unavailable
     if (!interpretation) {
-      interpretation = `${card.name} speaks of ${card.essence.toLowerCase()} in this decision. ${card.meaning} In practice, lean into the keywords: ${card.upright}. Consider both the strengths (${match.analysis.strengths.join(", ")}) and challenges (${match.analysis.challenges.join(", ")}) shown in your compatibility. Choose actions that honor the mantra: "${card.mantra}".`
+      const strengths = hasAnalysis ? ` your strengths (${(match as any).analysis.strengths.join(", ")})` : " your best instincts"
+      const challenges = hasAnalysis ? ` and watch for ${(match as any).analysis.challenges.join(", ")}` : " and watch for potential blind spots"
+      interpretation = `${card.name} invites you to lean into ${card.essence.toLowerCase()}. ${card.meaning} With ${match.candidates.name}, make the most of${strengths}${challenges}. Focus on the keywords: ${card.upright}. Move forward in a way that honors the mantra: "${card.mantra}".`
     }
 
     // Save to database
