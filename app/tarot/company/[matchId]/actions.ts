@@ -78,14 +78,14 @@ export async function generateCompanyTarotReading(matchId: string, cardName: str
               {
                 role: "system",
                 content:
-                  "You are a concise spirit guide addressing the hiring manager. Write 4–6 sentences total. Be direct, practical, and mystical but actionable. Tie advice to manager–company fit and organizational dynamics. No headings or lists.",
+                  "You are a concise spirit guide for hiring managers. Always address the manager as 'you'. Refer to the company by its name. Do not mention the manager's name or use phrases like 'you and <name>'. Write 4–6 sentences (~120 words), mystical yet practical, tied to manager–company fit and organizational dynamics. End with one clear next step. No headings or lists.",
               },
               {
                 role: "user",
                 content: (
                   hasAnalysis
-                    ? `For the company "${match.companies.name}", the card drawn is "${card.name}".\nMantra: "${card.mantra}". Essence: ${card.essence}. Keywords: ${card.upright}.\nCompatibility snapshot: score ${match.score}%. Summary: ${(match as any).analysis.summary}. Top strengths: ${(match as any).analysis.strengths.join(", ")}. Key challenges: ${(match as any).analysis.challenges.join(", ")}.\nSpeak directly to me as the manager. Give a 4–6 sentence oracle reading that connects this card to our culture, pace, and expectations, and ends with one clear next step.`
-                    : `For the company "${match.companies.name}", the card drawn is "${card.name}".\nMantra: "${card.mantra}". Essence: ${card.essence}. Keywords: ${card.upright}.\nNo analysis data is available. Speak directly to me as the manager. Give a 4–6 sentence oracle reading that connects this card to our culture, pace, and expectations, and ends with one clear next step.`
+                    ? `For the company "${match.companies.name}", the card drawn is "${card.name}".\nMantra: "${card.mantra}". Essence: ${card.essence}. Keywords: ${card.upright}.\nCompatibility snapshot: score ${match.score}%. Top strengths: ${(match as any).analysis.strengths.join(", ")}. Key challenges: ${(match as any).analysis.challenges.join(", ")}.\nSpeak directly to me as the manager. Use the context above without repeating any person's name. Give a 4–6 sentence oracle reading that connects this card to our culture, pace, and expectations, and ends with one clear next step.`
+                    : `For the company "${match.companies.name}", the card drawn is "${card.name}".\nMantra: "${card.mantra}". Essence: ${card.essence}. Keywords: ${card.upright}.\nNo analysis data is available. Speak directly to me as the manager. Do not mention any names. Give a 4–6 sentence oracle reading that connects this card to our culture, pace, and expectations, and ends with one clear next step.`
                 ),
               },
             ],

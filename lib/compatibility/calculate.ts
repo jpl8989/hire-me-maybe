@@ -203,11 +203,8 @@ async function performCompatibilityAnalysis(
   managerData: BirthData,
   candidateData: BirthData,
 ): Promise<CompatibilityResult> {
-  const apiKey = process.env.OPENAI_API_KEY
-
-  if (!apiKey) {
-    throw new Error("OpenAI API key not configured")
-  }
+  const geminiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY
+  const openaiKey = process.env.OPENAI_API_KEY
 
   // Calculate BaZi for both manager and candidate
   console.log("[v0] Calculating BaZi for manager:", managerData.name)
@@ -308,75 +305,163 @@ Return your analysis in JSON format with this exact structure:
 }`
 
   try {
-    console.log("[v0] Calling OpenAI API for compatibility analysis...")
+    let lastError: unknown
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are an expert in BaZi astrology and workplace compatibility analysis. Always respond with valid JSON.",
+    if (geminiKey) {
+      try {
+        console.log("[v0] Calling Gemini Flash for compatibility analysis...")
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`
+        const response = await fetch(geminiUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
           },
-          {
-            role: "user",
-            content: prompt,
-          },
-        ],
-        temperature: 0.7,
-        response_format: { type: "json_object" },
-      }),
-    })
+          body: JSON.stringify({
+            contents: [
+              {
+                role: "user",
+                parts: [{ text: `${prompt}\n\nOnly output valid JSON with the exact fields and types specified.` }],
+              },
+            ],
+            generationConfig: {
+              temperature: 0.7,
+            },
+          }),
+        })
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error("[v0] OpenAI API error:", response.status, errorText)
-      throw new Error(`OpenAI API error: ${response.statusText}`)
+        if (!response.ok) {
+          const errorText = await response.text()
+          console.error("[v0] Gemini API error:", response.status, errorText)
+          throw new Error(`Gemini API error: ${response.statusText}`)
+        }
+
+        const data = await response.json()
+        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text
+        if (!text) {
+          throw new Error("Gemini response missing text content")
+        }
+        const analysis = JSON.parse(text)
+
+        console.log("[v0] Gemini analysis received successfully")
+
+        return {
+          score: analysis.score,
+          analysis: {
+            ...analysis,
+            bazi_data: {
+              manager: {
+                yin_yang: {
+                  yin: managerBaZi.yinYang.yinPercent,
+                  yang: managerBaZi.yinYang.yangPercent,
+                  dominance: managerBaZi.yinYang.dominance,
+                },
+                elements: managerBaZi.elements,
+                day_master: {
+                  element: managerBaZi.dayMaster.element,
+                  yin_yang: managerBaZi.dayMaster.yinYang,
+                },
+              },
+              candidate: {
+                yin_yang: {
+                  yin: candidateBaZi.yinYang.yinPercent,
+                  yang: candidateBaZi.yinYang.yangPercent,
+                  dominance: candidateBaZi.yinYang.dominance,
+                },
+                elements: candidateBaZi.elements,
+                day_master: {
+                  element: candidateBaZi.dayMaster.element,
+                  yin_yang: candidateBaZi.dayMaster.yinYang,
+                },
+              },
+            },
+          },
+        }
+      } catch (e) {
+        lastError = e
+        console.warn("[v0] Gemini failed; attempting OpenAI fallback...", e instanceof Error ? e.message : e)
+      }
     }
 
-    const data = await response.json()
-    const analysis = JSON.parse(data.choices[0].message.content)
+    if (openaiKey) {
+      try {
+        console.log("[v0] Calling OpenAI API for compatibility analysis (fallback)...")
+        const response = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${openaiKey}`,
+          },
+          body: JSON.stringify({
+            model: "gpt-4o-mini",
+            messages: [
+              {
+                role: "system",
+                content:
+                  "You are an expert in BaZi astrology and workplace compatibility analysis. Always respond with valid JSON.",
+              },
+              {
+                role: "user",
+                content: prompt,
+              },
+            ],
+            temperature: 0.7,
+            response_format: { type: "json_object" },
+          }),
+        })
 
-    console.log("[v0] OpenAI analysis received successfully")
+        if (!response.ok) {
+          const errorText = await response.text()
+          console.error("[v0] OpenAI API error:", response.status, errorText)
+          throw new Error(`OpenAI API error: ${response.statusText}`)
+        }
 
-    return {
-      score: analysis.score,
-      analysis: {
-        ...analysis,
-        bazi_data: {
-          manager: {
-            yin_yang: {
-              yin: managerBaZi.yinYang.yinPercent,
-              yang: managerBaZi.yinYang.yangPercent,
-              dominance: managerBaZi.yinYang.dominance,
-            },
-            elements: managerBaZi.elements,
-            day_master: {
-              element: managerBaZi.dayMaster.element,
-              yin_yang: managerBaZi.dayMaster.yinYang,
+        const data = await response.json()
+        const analysis = JSON.parse(data.choices[0].message.content)
+
+        console.log("[v0] OpenAI analysis received successfully (fallback)")
+
+        return {
+          score: analysis.score,
+          analysis: {
+            ...analysis,
+            bazi_data: {
+              manager: {
+                yin_yang: {
+                  yin: managerBaZi.yinYang.yinPercent,
+                  yang: managerBaZi.yinYang.yangPercent,
+                  dominance: managerBaZi.yinYang.dominance,
+                },
+                elements: managerBaZi.elements,
+                day_master: {
+                  element: managerBaZi.dayMaster.element,
+                  yin_yang: managerBaZi.dayMaster.yinYang,
+                },
+              },
+              candidate: {
+                yin_yang: {
+                  yin: candidateBaZi.yinYang.yinPercent,
+                  yang: candidateBaZi.yinYang.yangPercent,
+                  dominance: candidateBaZi.yinYang.dominance,
+                },
+                elements: candidateBaZi.elements,
+                day_master: {
+                  element: candidateBaZi.dayMaster.element,
+                  yin_yang: candidateBaZi.dayMaster.yinYang,
+                },
+              },
             },
           },
-          candidate: {
-            yin_yang: {
-              yin: candidateBaZi.yinYang.yinPercent,
-              yang: candidateBaZi.yinYang.yangPercent,
-              dominance: candidateBaZi.yinYang.dominance,
-            },
-            elements: candidateBaZi.elements,
-            day_master: {
-              element: candidateBaZi.dayMaster.element,
-              yin_yang: candidateBaZi.dayMaster.yinYang,
-            },
-          },
-        },
-      },
+        }
+      } catch (e) {
+        lastError = e
+      }
     }
+
+    if (!geminiKey && !openaiKey) {
+      throw new Error("No AI provider configured")
+    }
+
+    throw lastError instanceof Error ? lastError : new Error("Both AI providers failed")
   } catch (error) {
     console.error("[v0] Error in performCompatibilityAnalysis:", error)
     throw new Error("Failed to calculate compatibility")

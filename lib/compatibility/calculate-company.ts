@@ -117,8 +117,8 @@ async function performManagerCompanyAnalysis(
   managerData: BirthData,
   companyData: BirthData,
 ) {
-  const apiKey = process.env.OPENAI_API_KEY
-  if (!apiKey) throw new Error("OpenAI API key not configured")
+  const geminiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY
+  const openaiKey = process.env.OPENAI_API_KEY
 
   // Calculate BaZi for manager and company
   const managerBaZi = calculateBaZi(
@@ -157,57 +157,136 @@ Company:
 
 Return JSON with the same schema used for candidate compatibility (score, categories, strengths, challenges, summary, recommendations, yin_yang_balance, five_elements).`
 
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: "You are an expert in BaZi and organizational fit. Always reply with JSON." },
-        { role: "user", content: prompt },
-      ],
-      temperature: 0.7,
-      response_format: { type: "json_object" },
-    }),
-  })
+  let lastError: unknown
 
-  if (!response.ok) {
-    const errorText = await response.text()
-    throw new Error(`OpenAI API error: ${response.status} ${errorText}`)
+  if (geminiKey) {
+    try {
+      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`
+      const response = await fetch(geminiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: `${prompt}\n\nOnly output valid JSON with the exact fields and types specified.` }],
+            },
+          ],
+          generationConfig: {
+            temperature: 0.7,
+          },
+        }),
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Gemini API error: ${response.status} ${errorText}`)
+      }
+
+      const data = await response.json()
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text
+      if (!text) {
+        throw new Error("Gemini response missing text content")
+      }
+      const analysis = JSON.parse(text)
+
+      return {
+        score: analysis.score,
+        analysis: {
+          ...analysis,
+          bazi_data: {
+            manager: {
+              yin_yang: {
+                yin: managerBaZi.yinYang.yinPercent,
+                yang: managerBaZi.yinYang.yangPercent,
+                dominance: managerBaZi.yinYang.dominance,
+              },
+              elements: managerBaZi.elements,
+              day_master: managerBaZi.dayMaster,
+            },
+            company: {
+              yin_yang: {
+                yin: companyBaZi.yinYang.yinPercent,
+                yang: companyBaZi.yinYang.yinPercent,
+                dominance: companyBaZi.yinYang.dominance,
+              },
+              elements: companyBaZi.elements,
+              day_master: companyBaZi.dayMaster,
+            },
+          },
+        },
+      }
+    } catch (e) {
+      lastError = e
+      console.warn("[v0] Gemini failed; attempting OpenAI fallback...", e instanceof Error ? e.message : e)
+    }
   }
 
-  const data = await response.json()
-  const analysis = JSON.parse(data.choices[0].message.content)
+  if (openaiKey) {
+    try {
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${openaiKey}`,
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: [
+            { role: "system", content: "You are an expert in BaZi and organizational fit. Always reply with JSON." },
+            { role: "user", content: prompt },
+          ],
+          temperature: 0.7,
+          response_format: { type: "json_object" },
+        }),
+      })
 
-  return {
-    score: analysis.score,
-    analysis: {
-      ...analysis,
-      bazi_data: {
-        manager: {
-          yin_yang: {
-            yin: managerBaZi.yinYang.yinPercent,
-            yang: managerBaZi.yinYang.yangPercent,
-            dominance: managerBaZi.yinYang.dominance,
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`OpenAI API error: ${response.status} ${errorText}`)
+      }
+
+      const data = await response.json()
+      const analysis = JSON.parse(data.choices[0].message.content)
+
+      return {
+        score: analysis.score,
+        analysis: {
+          ...analysis,
+          bazi_data: {
+            manager: {
+              yin_yang: {
+                yin: managerBaZi.yinYang.yinPercent,
+                yang: managerBaZi.yinYang.yinPercent,
+                dominance: managerBaZi.yinYang.dominance,
+              },
+              elements: managerBaZi.elements,
+              day_master: managerBaZi.dayMaster,
+            },
+            company: {
+              yin_yang: {
+                yin: companyBaZi.yinYang.yinPercent,
+                yang: companyBaZi.yinYang.yinPercent,
+                dominance: companyBaZi.yinYang.dominance,
+              },
+              elements: companyBaZi.elements,
+              day_master: companyBaZi.dayMaster,
+            },
           },
-          elements: managerBaZi.elements,
-          day_master: managerBaZi.dayMaster,
         },
-        company: {
-          yin_yang: {
-            yin: companyBaZi.yinYang.yinPercent,
-            yang: companyBaZi.yinYang.yangPercent,
-            dominance: companyBaZi.yinYang.dominance,
-          },
-          elements: companyBaZi.elements,
-          day_master: companyBaZi.dayMaster,
-        },
-      },
-    },
+      }
+    } catch (e) {
+      lastError = e
+    }
   }
+
+  if (!geminiKey && !openaiKey) {
+    throw new Error("No AI provider configured")
+  }
+
+  throw lastError instanceof Error ? lastError : new Error("Both AI providers failed")
 }
 
 

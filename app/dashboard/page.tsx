@@ -71,7 +71,7 @@ export default async function DashboardPage() {
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2 text-primary">
-            <span className="text-xl font-semibold">HireMeMaybe</span>
+            <span className="text-xl font-display font-bold tracking-[0.01em]">HireMe<span className="italic">Maybe</span></span>
           </div>
           <form action="/auth/sign-out" method="post">
             <Button variant="ghost" size="sm" type="submit">

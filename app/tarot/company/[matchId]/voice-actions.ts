@@ -3,13 +3,13 @@
 import { createElevenLabsClient, MEDITATIVE_VOICE_SETTINGS } from "@/lib/elevenlabs/client"
 
 // Company-specific ElevenLabs voice (provided by user)
-const COMPANY_VOICE_ID = "Sw1Vim1v8EhzvKFG9mei"
+const COMPANY_VOICE_ID = "UvFmc37lQcxsSts1KwSb"
 
 export async function generateIntroAudio(companyName: string) {
   try {
     const client = createElevenLabsClient()
 
-    const introText = `Let's do a card reading for ${companyName}. Focus on your leadership questions and choose a card that speaks to you. Trust your instincts as you select.`
+    const introText = `Keep ${companyName} in mind and trust your first instinct. Select a card to learn what growth is possible.`
 
     const result = await client.generateSpeech(
       introText,
